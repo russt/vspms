@@ -4,9 +4,11 @@
 #login session.  It should be removed upon logout
 
 setenv PROJECT_ENV /tmp/pjenv$$
+setenv PROJECT_SAVE ~/.pjenv
 alias rmpjenv /bin/rm -f $PROJECT_ENV
-alias exit "rmpjenv;exit"
-alias logout "rmpjenv;logout"
+alias pjout 'rmpjenv;exit'
+alias pjsave '/bin/mv $PROJECT_ENV $PROJECT_SAVE;exit'
+alias pjrestore sed -e "'"'s/;.*/>\/dev\/null/;s/^/pushd /'"'" '$PROJECT_SAVE >! $PROJECT_ENV; source $PROJECT_ENV;cp $PROJECT_SAVE $PROJECT_ENV;swpj'
 
 # note the trick "echo ...>& /dev/null" used in some of the aliases.
 # If ... is undefined, then the rest of the command string will not
@@ -22,7 +24,7 @@ alias pco 'echo $REV; co -r$REV \!*'
 # the current project environment.
 # yes, use "wherepj !*", in case no args
 
-alias chpj 'set tmp=(`wherepj \!*` $cwd); setenv PROJECT $tmp[1]; edpjenv del $cwd; cd $PROJECT; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; setenv SBPJ ""; dirs; source .projectrc>&/dev/null; echo $REV'
+alias chpj 'set tmp=(`wherepj \!*` $cwd); setenv PROJECT $tmp[1]; edpjenv del $cwd; cd $PROJECT; edpjenv set $cwd $PROJECT .; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; setenv SBPJ ""; dirs; source .projectrc>&/dev/null; echo $REV'
 
 #note - tmp is set to `wherepj ...` so that pushd will not see args if
 #none echoed, causing it to swap top two elements
