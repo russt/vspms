@@ -7,8 +7,8 @@ if ($ans != y) then
 
 cat << 'EOF'
 -------------------------------------------------------------------------------
-If you would like to try VSPMS, then you need to add commands similar to
-the following to your .cshrc file:
+If you would like to try VSPMS, then you'll need to add commands similar to
+the following in your .cshrc file:
 
 	setenv MYPROJECTS my_project_index
 	if (-r /usr/local/lib/vspms.aliases) then
@@ -97,7 +97,7 @@ project environment - here is an example:
 		alias pci "echo $REV; ci -N$REV \!*"
 		alias pco "echo $REV; co -r$REV \!*"
 
-If you allowed installpj to modify your .cshrc file, then Issue the command:
+If you allowed installpj to modify your .cshrc file, then issue the command:
 
 	source ~/.cshrc
 
