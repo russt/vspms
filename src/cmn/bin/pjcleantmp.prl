@@ -1,0 +1,208 @@
+#!/usr/bin/perl -w
+# pjcleantmp - remove inactive VSPMS temporary files from /tmp.
+#
+
+#################################### INIT #####################################
+
+&init;	#init global vars
+
+sub sighandler
+{
+	local($sig) = @_;	#name of signal (string)
+
+	printf STDERR ("%s:  SIGNAL %s - aborting program\n", $p, $sig);
+	exit(2);
+}
+
+$SIG{'INT'} = 'sighandler';
+$SIG{'TERM'} = 'sighandler';
+
+#################################### MAIN #####################################
+
+&parse_args;
+
+@lsout = ();
+&ls(*lsout, $TMPDIR);
+
+#printf("BEFORE:  lsout=%s\n", join(",", @lsout));
+
+$PATTERN = '\w+_(pjenv|home_env|home_alias|curr_alias|curr_env)\.(\d+)$';
+@lsout = grep(/$PATTERN/, @lsout);
+
+#printf("AFTER:  lsout=%s\n", join(",", @lsout));
+
+#get a list of unique process ids:
+for $fn (@lsout) {
+	if ($fn =~ /$PATTERN/) {
+#printf("1=%s 2=%s\t", $1, $2);
+		if (defined($PIDS{$2})) {
+			$PIDS{$2} .= "\t$TMPDIR/$fn";
+		} else {
+			$PIDS{$2} = "$TMPDIR/$fn";
+		}
+	}
+}
+
+$NFILES = 0;	#keep track of how many files to be removed.
+$NRMFAILS = 0;	#keep track of how many files we failed to remove
+
+for $pid (keys %PIDS) {
+#printf("pid=%s\t", $pid);
+	if (!&is_a_shell($pid)) {
+		@rmlist = split("\t", $PIDS{$pid});
+		$NFILES += $#rmlist +1;
+		if ($GENCOMMANDS) {
+			printf("rm -f %s\n", join("\t", @rmlist));
+		} else {
+			$nn = unlink(@rmlist);
+			if ($nn != $#rmlist +1) {
+				printf STDERR
+				("%s: failed to remove all files in list: (%s)\n", $p, join(",", @rmlist))
+				unless ($QUIET);
+
+				$NRMFAILS += ($#rmlist +1) - $nn;
+			}
+		}
+	} else {
+		printf STDERR 
+			("#%d is an active process - not removing VSPMS tmp files.\n", $pid)
+		unless ($QUIET);
+	}
+}
+
+if ($GENCOMMANDS) {
+	printf STDERR
+	("%s: %d inactive files found.\n", $p, $NFILES)
+	unless ($QUIET);
+} else {
+	printf STDERR
+	("%s: removed %d/%d inactive files.\n", $p, $NFILES-$NRMFAILS, $NFILES)
+	unless ($QUIET);
+}
+
+printf STDERR
+("%s: remove FAILED for %d files. Check permissions on /tmp.\n",$p, $NFILES)
+unless ($NRMFAILS == 0);
+
+exit(0);
+&squawk_off;
+
+################################# SUBROUTINES #################################
+
+sub is_a_shell
+#checks to see if <pid> is a running process.
+#1 if yes, 0 if not.
+{
+	local($pid) = @_;
+	local(@psout) = `$PSCMD $pid 2> /dev/null`;
+	local($exit_val, $sigval) = ($? >> 8, $? & 0xff);
+
+#printf("#psout=%d, psout=(%s)\n", $#psout, join(',', @psout));
+#printf("ps for pid %d ?=%d (0x%08X) exit=0x%04X sigval=0x%04X\n", $pid, $?, $?, $exit_val, $sigval);
+
+	#ASSERT:  the ps command returns 0 if the process exists, 1 if it doesn't,
+	#         and something else if there is an interrupt.  curiously, this test
+	#         causes some implementations to honor the signal, but not our signal
+	#         handler.
+	#...later...this assertion doesn't work on pequod.
+	#        
+	if ($sigval != 0 || $exit_val > 0x01) {
+		&sighandler("INT");	#this exits program.
+		return(1);	#defensive only
+	}
+
+	#make sure a zero really means there is a process...
+	if ($? == 0) {
+		return($#psout > 0);
+	}
+
+	return(0);	#not a shell
+}
+
+sub ls
+#<lsout> <-- `ls <dir>`
+{
+	local (*lsout, $dir) = @_;
+
+	if (!opendir(DIR, $dir)) {
+		@lsout = ();
+		return;
+	}
+
+	@lsout = grep(!/^\.\.?$/,readdir(DIR));
+
+	closedir(DIR);
+}
+
+sub init
+{
+    #set up program name argument:
+    local(@tmp) = split('/', $0);
+    # figure out the program name and put it into p
+    $p = $tmp[$#tmp];
+
+	#global vars:
+	$TMPDIR = "/tmp";
+	#$TMPDIR = "/tmp/tst";
+	$PSCMD = "/bin/ps -p";
+}
+
+################################ USAGE SUBROUTINES ###############################
+
+sub usage
+{
+	local($status) = @_;
+
+    print STDERR <<"!";
+Usage:  $p [-h] [-f] [-q]
+
+Synopsis:
+
+Remove VSPMS tmp files that have no user process associated with them.
+
+Options
+ -h     show this usage message.
+ -f     execute the remove commands instead of generating them.
+ -q     quiet mode - no feed back except for errors.
+!
+    exit($status);
+}
+
+sub parse_args
+#proccess command-line aguments
+{
+	local ($flag);
+
+	$QUIET = 0;			#default is to give some feedback
+	$GENCOMMANDS = 1;	#default is to generate rm commands
+
+    #eat up flag args:
+    while ($#ARGV+1 > 0 && $ARGV[0] =~ /^-/) {
+		$flag = shift(@ARGV);
+
+		if ($flag eq '-f') {
+			$GENCOMMANDS = 0;	#default is to generate rm commands
+		} elsif ($flag =~ '^-q') {
+			$QUIET = 1;
+		} elsif ($flag =~ '^-h') {
+			&usage(0);
+		} else {
+			&usage(1);
+		}
+    }
+
+    #take remaining args as command names:
+    if ($#ARGV >= 0) {
+		#NOTE:  on some unix machines, the perl startup line:
+		#	perl -x -S $0 "$@"; exit $?
+		#creates an empty argv[0].
+		&usage(1) unless ($#ARGV > 0 || $ARGV[0] eq "");
+	}
+}
+
+sub squawk_off
+#shut up extraneous warnings from perl -w option:
+{
+    if (1 > 2) {
+    }
+}
