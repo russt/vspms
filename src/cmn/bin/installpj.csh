@@ -4,11 +4,34 @@
 echo -n "This script will modify your .cshrc file.  'y' to continue: "
 set ans=$<
 if ($ans != y) then
-  echo "Aborted..."
-  exit -1
+
+cat << 'EOF'
+-------------------------------------------------------------------------------
+If you would like to try VSPMS, then you need to add commands similar to
+the following to your .cshrc file:
+
+	setenv MYPROJECTS my_project_index
+	if (-r /usr/local/lib/vspms.aliases) then
+		source /usr/local/lib/vspms.aliases
+	endif
+
+where "my_project_index" is the name of a file containing lines of the
+form:
+	project_name	project_directory
+
+'EOF'
+
+	echo -n "Would you like to see more?  "
+	set ans=$<
+	if ($ans != y) then
+	  exit -1
+	endif
+
+	goto PRINTDOC
 endif
 
 ed - ~/.cshrc << 'EOF'
+g/	#VSPMS$/d
 g/alias[ 	]lspj[ 	]/d
 g/alias[ 	]chpj[ 	]/d
 g/alias[ 	]pjenv[ 	]/d
@@ -16,21 +39,20 @@ g/alias[ 	]pushpj[ 	]/d
 g/alias[ 	]poppj[ 	]/d
 g/alias[ 	]swpj[ 	]/d
 $a
-alias lspj 'cat $MYPROJECTS'
-alias chpj 'cd `wherepj \!*`;setenv PROJECT `pwd`;setenv REV NONE;dirs;source .projectrc>&/dev/null;echo $REV'
-alias pushpj 'set tmp=`wherepj \!*`;pushd $tmp; setenv PROJECT `pwd`;setenv REV NONE;source .projectrc>&/dev/null;echo $REV'
-alias poppj 'popd;setenv PROJECT `pwd`;setenv REV NONE;source .projectrc>&/dev/null;echo $REV'
-alias pjenv 'echo Project $PROJECT, Revision $REV;echo Project table is $MYPROJECTS;echo -n "Directory stack is:  ";dirs'
-alias swpj 'pushpj'
+if (-r /usr/local/lib/vspms.aliases) then			#VSPMS
+	source /usr/local/lib/vspms.aliases			#VSPMS
+endif								#VSPMS
 .
 w
 q
 'EOF'
+
+PRINTDOC:
+
 more <<'EOF'
 -------------------------------------------------------------------------------
 
-The following project management aliases have been newly installed,
-or updated, in your .cshrc file:
+Brief guide to VSPMS commands:
 
 	alias			description:
 	-------------------	---------------------------------------------
@@ -58,14 +80,14 @@ or updated, in your .cshrc file:
 
 	pjenv			prints the current project environment.
 
-For these aliases to have effect, you must define the following environment
+To use these commands, you must define the following environment
 variable:
 
 	setenv MYPROJECTS my_project_index
 
 Your project index file has 2 columns:
 
-	project_name	project directory
+	project_name	project_directory
 
 The project directory should have a ".projectrc" file, to establish the
 project environment - here is an example:
@@ -75,7 +97,7 @@ project environment - here is an example:
 		alias pci "echo $REV; ci -N$REV \!*"
 		alias pco "echo $REV; co -r$REV \!*"
 
-Issue the command:
+If you allowed installpj to modify your .cshrc file, then Issue the command:
 
 	source ~/.cshrc
 
