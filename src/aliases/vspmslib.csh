@@ -48,7 +48,7 @@ alias swpj 'pushpj'
 
 alias poppj 'popd; edpjenv del $PROJECT/$SBPJ; set tmp=`edpjenv get $cwd`; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; source $PROJECT/.projectrc>&/dev/null; echo $REV'
 
-alias pjenv 'echo Project $PROJECT, Sub-Project $SBPJ, Revision $REV;echo Project list:  $MYPROJECTS;echo Makemf library: $MAKEMF_LIB;echo -n "Project stack:  ";dirs'
+alias pjenv 'echo "PROJECT:	$PROJECT";echo "SUB-PROJECT:	$SBPJ";echo "REVISION:	$REV";echo "MYPROJECTS:	$MYPROJECTS";echo "MAKEMF_LIB:	$MAKEMF_LIB";dirs'
 
 #no args - back to the "current" subpj, which is the parent project
 alias subpj 'set tmp=(\!* $SBPJ);cd $PROJECT/$tmp[1]; edpjenv del $PROJECT/$SBPJ;setenv SBPJ $tmp[1]; edpjenv set $cwd $PROJECT $SBPJ; dirs; echo $REV'
