@@ -55,7 +55,7 @@ alias subpj 'set tmp=(\!* $SBPJ);cd $PROJECT/$tmp[1]; edpjenv del $PROJECT/$SBPJ
 
 #note the -s flag to wherepj.  this causes wherepj to echo $PROJECT/!$
 #unless the arg is of the +n variety
-alias pushspj 'set sav=$cwd; set tmp= `wherepj -s \!*`; pushd $tmp; edpjenv reset $sav $PROJECT $SBPJ; edpjenv set $cwd $PROJECT $tmp; echo $REV'
+alias pushspj 'set sav=$cwd; set tmp=`wherepj -s \!*`; pushd $tmp; edpjenv reset $sav $PROJECT $SBPJ; set tmp=`edpjenv get $cwd`; if ($tmp[2] == '.') set tmp[2]=\!*; setenv SBPJ $tmp[2]; edpjenv set $cwd $PROJECT $SBPJ; echo $REV'
 
 alias swspj 'pushspj'
 
