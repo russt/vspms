@@ -178,7 +178,6 @@ fprintf(stderr, "looking for '%s' in file '%s'\n", look4, fn);
 	*/
 	if ((fp = fopen(fn,"r")) == NULL)
 	{
-		fprintf(stderr, "%s: WARNING: can't open %s\n",prog,fn);
 #if DEBUG
 		perror("wherepj");
 #endif DEBUG
@@ -228,8 +227,77 @@ char *buf;
 
 	retval[i] = '\0';
 
-#if DEBUG > 1
+#if DEBUG
 fprintf(stderr,"projname='%s'\n",retval);
+#endif DEBUG
+
+	return(retval);
+}
+
+char *
+expand_env(buf)
+/*
+** interpolate any environment variables in <buf>
+*/
+char *buf;
+{
+	static char retval[BUFSIZ];
+	char cmd[BUFSIZ], tmpfn[BUFSIZ];
+	int has_evar = 0;
+	int errs = 0;
+	int ii = 0;
+	FILE *fp;
+
+	retval[0] = '\0';
+
+	strcpy(retval,buf);
+
+	has_evar = 0;
+	ii = 0;
+	while(buf[ii] != '\0') {
+		if (buf[ii] == '$') {
+			has_evar = 1;
+			break;
+		}
+		++ii;
+	}
+
+	if (has_evar) {
+		sprintf(tmpfn, "/tmp/%s.%d", prog, getpid());
+		sprintf(cmd, "echo %s > %s", retval, tmpfn);
+#if DEBUG
+		fprintf(stderr,"cmd='%s' tmpfn='%s'\n",cmd, tmpfn);
+#endif DEBUG
+
+		system(cmd);
+
+		if ((fp = fopen(tmpfn,"r")) != NULL) {
+			/* read the result: */
+			if (fgets(retval,BUFSIZ,fp) != NULL) {
+				/* trim EOL chars: */
+				ii = strlen(retval) - 1;
+				while (retval[ii] == '\n' || retval[ii] == '\r') {
+					retval[ii++] = '\0';
+				}
+
+			} else {
+				++errs;
+			}
+
+			/* clean up: */
+			fclose(fp);
+			unlink(tmpfn);
+		} else {
+			++errs;
+		}
+
+		if (errs != 0) {
+			fprintf(stderr,"%s:  WARNING:  Errors interpolating '%s'\n", prog, buf);
+		}
+	}
+
+#if DEBUG
+	fprintf(stderr,"expand_env retval='%s'\n", retval);
 #endif DEBUG
 
 	return(retval);
@@ -262,14 +330,15 @@ char *buf;
 	}
 
 	if (i <= 0) {
-		retval[i] = '\0';
+		retval[0] = '\0';
 	} else {
 		retval[i-1] = '\0';
 	}
 
-#if DEBUG > 1
+#if DEBUG
 fprintf(stderr,"projdir='%s'\n",retval);
 #endif DEBUG
 
+	strcpy(retval, expand_env(retval));
 	return(retval);
 }
