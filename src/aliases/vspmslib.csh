@@ -15,6 +15,8 @@ if !($?PROJECT_ENV)	setenv PROJECT_ENV /tmp/pjenv.$USER
 if !($?PROJECT_SAVE)	setenv PROJECT_SAVE ~/.pjenv.`hostname`
 alias rmpjenv /bin/rm -f $PROJECT_ENV
 alias pjsave '/bin/rm -f $PROJECT_SAVE;/bin/mv $PROJECT_ENV $PROJECT_SAVE>&/dev/null'
+#NOTE (pjout): if the exit fails (due to suspended jobs), then do not repeat
+#pjout command or PROJECT_SAVE file will be trashed.
 alias pjout 'pjsave;exit'
 #if save file doesn't exist this will create empty environment file
 alias pjrestore sed -e "'"'s/;.*/>\/dev\/null/;s/^/pushd /;1s/pushd/cd/;$s/$/;pushd ~ >\/dev\/null/'"'" '$PROJECT_SAVE >! $PROJECT_ENV; source  $PROJECT_ENV;/bin/cp $PROJECT_SAVE $PROJECT_ENV;dirs'
