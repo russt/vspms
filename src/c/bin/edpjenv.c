@@ -2,6 +2,7 @@
 #include <ctype.h>
 
 #define USAGE_SET	"Usage:  %s set dir project [subproj|+n]\n"
+#define USAGE_RESET	"Usage:  %s reset dir old_project old_subpj\n"
 #define USAGE_GET	"Usage:  %s get dir\n"
 #define USAGE_DEL	"Usage:  %s del dir\n"
 
@@ -40,6 +41,11 @@ main(argc,argv,envp)
 **		if dir is in the project cache, then NOP
 **		if not in cache, then adds the triple (dir,project,subproject)
 **	
+**	reset dir project subproject
+**		if proj is contained in dir, reset the project environment
+**		for proj/subpj to be (dir,proj,new), where new dir-proj.
+**		if proj is not contained in dir, reset to (dir,dir,"."), 
+**	
 **	del dir
 **		if dir is in the project cache, then delete it
 */
@@ -51,12 +57,13 @@ char *envp[];
 	char dir[MAXLEN];
 	char proj[MAXLEN];
 	char subpj[MAXLEN];
-	int argn = 1;
+	int argn = 1, set_op;
 
 	strcpy(argv0,argv[0]);
 
 	if (argc < 2) {
 		fprintf(stderr,USAGE_SET,argv[0]);
+		fprintf(stderr,USAGE_RESET,argv[0]);
 		fprintf(stderr,USAGE_GET,argv[0]);
 		fprintf(stderr,USAGE_DEL,argv[0]);
 		exit(1);
@@ -84,6 +91,7 @@ char *envp[];
 			exit(1);
 		}
 		strcpy(dir,argv[argn++]);
+		normalize(dir);
 		delpjenv(dir);
 		break;
 	case 'g':
@@ -94,26 +102,37 @@ char *envp[];
 			exit(1);
 		}
 		strcpy(dir,argv[argn++]);
+		normalize(dir);
 		getpjenv(dir);
 		break;
 	case 's':
+	case 'r':
+		set_op = (argv[argn][0] == 's');
 		++argn;		/* skip keyword */
 		/* Usage:  set dir project [subproject|+n] */
 		if (argc < 4) {
-			fprintf(stderr,USAGE_SET,argv[0]);
+			if (set_op)
+				fprintf(stderr,USAGE_SET,argv[0]);
+			else
+				fprintf(stderr,USAGE_RESET,argv[0]);
 			exit(1);
 		}
 		strcpy(dir,argv[argn++]);
+		normalize(dir);
 		strcpy(proj,argv[argn++]);
 		if (argn < argc) {
 			strcpy(subpj,argv[argn++]);
 		}
 		else
 			strcpy(subpj,".");
-		setpjenv(dir,proj,subpj);
+		if (set_op)
+			setpjenv(dir,proj,subpj);
+		else
+			resetpjenv(dir,proj,subpj);
 		break;
 	default:
 		fprintf(stderr,USAGE_SET,argv[0]);
+		fprintf(stderr,USAGE_RESET,argv[0]);
 		fprintf(stderr,USAGE_GET,argv[0]);
 		fprintf(stderr,USAGE_DEL,argv[0]);
 		exit(1);
@@ -196,6 +215,49 @@ register char *dir;
 
 }
 
+resetpjenv(dir,proj,subpj)
+/*
+**	if proj is contained in dir, reset the project environment
+**	for proj/subpj to be (dir,proj,new), where new dir-proj.
+**
+**	if proj is not contained in dir, reset to (dir,dir,"."), 
+*/
+register char *dir;
+char *proj, *subpj;
+{
+	char tmp[MAXLEN], *p;
+	register int i;
+	int is_subpj;
+
+	strcpy(tmp,dir);
+	tmp[strlen(proj)] = '\0';
+	is_subpj = streq(tmp,proj);
+
+	sprintf(tmp,"%s/%s",proj,subpj);	/* formulate search key */
+	normalize(tmp);
+
+	for (i=0; i< nEnv; i++) {
+		if (streq(tmp,dirEnv[i])) {
+			strcpy(dirEnv[i],dir);
+			if (is_subpj) {
+				strcpy(projEnv[i],proj);
+				/* the new sub-project is derived from dir: */
+				strcpy(sbpjEnv[i], &dir[strlen(proj)+1]);
+				if (sbpjEnv[i][0] == '\0')
+					strcpy(sbpjEnv[i],".");
+			}
+			else {
+				/* o'wise, use defaults: */
+				strcpy(projEnv[i],dir);
+				strcpy(sbpjEnv[i],".");
+			}
+
+			updateEnv();
+			return;
+		}
+	}
+}
+
 updateEnv()
 /*
 **	update the environment string
@@ -264,6 +326,28 @@ parseEnv()
 		++p;	/* skip final newline */
 
 		nEnv++;
+	}
+}
+
+normalize(dir)
+/* normalize a directory name, by deleting trailing '/' or '/.'
+** (unless the full pathname is '/').
+*/
+char *dir;	/* value-result */
+{
+	register int len;
+
+	len = strlen(dir)-1;
+
+	if (len > 0) {
+		if (dir[len] == '.')
+			dir[len] = '\0';
+	}
+	--len;
+
+	if (len > 0) {
+		if (dir[len] == '/')
+			dir[len] = '\0';
 	}
 }
 
