@@ -92,10 +92,9 @@ char *envp[];
 
 		if (p == NULL)
 		{
-			fprintf(stderr,"%s:  %s is undefined\n",prog,
-				PROJECT_VAR);
+			fprintf(stderr,"%s:  %s is undefined\n",prog, PROJECT_VAR);
 			fprintf(stdout,"NULL\n");
-			exit(-1);
+			exit(1);
 		}
 
 		fprintf(stdout,"%s/%s\n",p,argv[argn]);
@@ -120,21 +119,22 @@ int
 lspj(fn)
 /*
 ** list the project index files, and interprolate the include files.
+** returns 0 if no errors.
 */
 char fn[];
 {
 	char buf[BUFSIZ], proj[BUFSIZ];
 	FILE *fp;
+	int nerrs = 0;
+	int result = 0;
 
 	/*
 	** is the project list file accessible?
 	*/
 	if ((fp = fopen(fn,"r")) == NULL)
 	{
-		fprintf(stderr, "%s:  can't open %s\n",prog,fn);
-		perror("wherepj");
-		fprintf(stdout,"NULL\n");
-		exit(1);
+		fprintf(stderr, "%s: WARNING: can't open %s\n",prog,fn);
+		return(1);
 	}
 
 	/*
@@ -144,16 +144,17 @@ char fn[];
 		strcpy(proj,projname(buf));
 		if (streq(proj, "%include")) {
 			/* PROCESS INCLUDE file */
-			fprintf(stdout, "%s", buf);
-			lspj(projdir(buf));
-			fprintf(stdout, "<END INCLUDE>\n");
+			fprintf(stdout, "<BEGIN INCLUDE %s>\n", projdir(buf));
+			result = lspj(projdir(buf));
+			fprintf(stdout, "<%s INCLUDE %s>\n", (result == 0 ? "END" : "FAILED"), projdir(buf));
+			nerrs += result;
 		} else {
 			fputs(buf,stdout);
 		}
 	}
 
 	fclose(fp);
-	return(0);
+	return(nerrs);
 }
 int
 searchpjfile(dirstr, look4, fn)
@@ -177,10 +178,11 @@ fprintf(stderr, "looking for '%s' in file '%s'\n", look4, fn);
 	*/
 	if ((fp = fopen(fn,"r")) == NULL)
 	{
-		fprintf(stderr, "%s:  can't open %s\n",prog,fn);
+		fprintf(stderr, "%s: WARNING: can't open %s\n",prog,fn);
+#if DEBUG
 		perror("wherepj");
-		fprintf(stdout,"NULL\n");
-		exit(1);
+#endif DEBUG
+		return(0);
 	}
 
 	/*
