@@ -77,35 +77,39 @@ char *envp[];
 
 	switch (argv[argn][0]) {
 	case 'd':
+		++argn;		/* skip keyword */
 		/* Usage:  del dir */
 		if (argc < 3) {
 			fprintf(stderr,USAGE_DEL,argv[0]);
 			exit(1);
 		}
-		strcpy(dir,argv[++argn]);
+		strcpy(dir,argv[argn++]);
 		delpjenv(dir);
 		break;
 	case 'g':
+		++argn;		/* skip keyword */
 		/* Usage:  get dir */
 		if (argc < 3) {
 			fprintf(stderr,USAGE_GET,argv[0]);
 			exit(1);
 		}
-		strcpy(dir,argv[++argn]);
+		strcpy(dir,argv[argn++]);
 		getpjenv(dir);
 		break;
 	case 's':
+		++argn;		/* skip keyword */
 		/* Usage:  set dir project [subproject|+n] */
 		if (argc < 4) {
 			fprintf(stderr,USAGE_SET,argv[0]);
 			exit(1);
 		}
-		strcpy(dir,argv[++argn]);
-		strcpy(proj,argv[++argn]);
-		if (argn < argc)
-			strcpy(subpj,argv[++argn]);
+		strcpy(dir,argv[argn++]);
+		strcpy(proj,argv[argn++]);
+		if (argn < argc) {
+			strcpy(subpj,argv[argn++]);
+		}
 		else
-			subpj[0] = '\0';
+			strcpy(subpj,".");
 		setpjenv(dir,proj,subpj);
 		break;
 	default:
@@ -162,12 +166,15 @@ register char *dir;
 
 	for (i=0; i< nEnv; i++) {
 		if (streq(dir,dirEnv[i])) {
-			printf("%s %s %s\n",dir,projEnv[i],sbpjEnv[i]);
+			printf("%s %s\n",projEnv[i],sbpjEnv[i]);
 			return;
 		}
 	}
 
 	printf("%s .\n",dir);
+
+	/* enter in cache: */
+	setpjenv(dir,dir,".");
 }
 
 delpjenv(dir)
@@ -195,31 +202,25 @@ updateEnv()
 */
 {
 	register int i;
-	char buf[BUFSIZ*4];
-	char tmp[BUFSIZ/2];
 	FILE *fp;
-
-	buf[0] = '\0';
-	for (i=0; i< nEnv; i++) {
-		if (dirEnv[i][0] != '\0') {
-			sprintf(tmp, "%s;%s;%s;",
-				dirEnv[i], projEnv[i], sbpjEnv[i]);
-			strcat(buf,tmp);
-		}
-	}
 
 	/*
 	** open env file for writing...
 	*/
-	if ((fp = fopen(pjenv_fn,"w")) != NULL) {
-		fwrite(buf,strlen(buf),1,fp);
-		fclose(fp);
-	}
-	else {
+	if ((fp = fopen(pjenv_fn,"w")) == NULL) {
 		fprintf(stderr,"%s:  can't create env tmp file, %s\n",
 			argv0,pjenv_fn);
 		exit(1);
 	}
+
+	for (i=0; i< nEnv; i++) {
+		if (dirEnv[i][0] != '\0') {
+			fprintf(fp, "%s;%s;%s\n",
+				dirEnv[i], projEnv[i], sbpjEnv[i]);
+		}
+	}
+
+	fclose(fp);
 }
 
 parseEnv()
@@ -247,18 +248,20 @@ parseEnv()
 
 	/* read env file into arrays: */
 	while (*p) {
-		for (j=0;*p != ';' && *p; j++,p++)
-			dirEnv[nEnv][j] = *p;
-
+		for (j=0;*p != ';' && *p; p++)
+			dirEnv[nEnv][j++] = *p;
+		dirEnv[nEnv][j++] = '\0';
 		++p;	/* skip semi-colon */
-		for (j=0;*p != ';' && *p; j++,p++)
-			projEnv[nEnv][j] = *p;
 
+		for (j=0;*p != ';' && *p; p++)
+			projEnv[nEnv][j++] = *p;
+		projEnv[nEnv][j++] = '\0';
 		++p;	/* skip semi-colon */
-		for (j=0;*p != ';' && *p; j++,p++)
-			sbpjEnv[nEnv][j] = *p;
 
-		++p;	/* skip final semi-colon */
+		for (j=0;*p != '\n' && *p; p++)
+			sbpjEnv[nEnv][j++] = *p;
+		sbpjEnv[nEnv][j++] = '\0';
+		++p;	/* skip final newline */
 
 		nEnv++;
 	}
