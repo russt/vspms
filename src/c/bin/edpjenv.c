@@ -144,7 +144,7 @@ char *envp[];
 setpjenv(dir,proj,subpj)
 /*
 **	set dir project [subproject|+n]
-**		if dir is in the project cache, then NOP
+**		if dir is in the project cache, then reset to new args
 **		if not in cache, then adds the triple (dir,project,subproject)
 */
 register char *dir;
@@ -154,6 +154,10 @@ char *proj, *subpj;
 
 	for (i=0; i< nEnv; i++) {
 		if (streq(dir,dirEnv[i])) {
+			strcpy(dirEnv[i],dir);
+			strcpy(projEnv[i],proj);
+			strcpy(sbpjEnv[i],subpj);
+			updateEnv();
 			return;
 		}
 	}
@@ -218,7 +222,7 @@ register char *dir;
 resetpjenv(dir,proj,subpj)
 /*
 **	if proj is contained in dir, reset the project environment
-**	for proj/subpj to be (dir,proj,new), where new dir-proj.
+**	for proj/subpj to be (dir,proj,new), where new = {dir - proj}.
 **
 **	if proj is not contained in dir, reset to (dir,dir,"."), 
 */
@@ -340,14 +344,15 @@ char *dir;	/* value-result */
 	len = strlen(dir)-1;
 
 	if (len > 0) {
-		if (dir[len] == '.')
+		if (dir[len] == '.' && dir[len-1] == '/') {
 			dir[len] = '\0';
+			--len;
+		}
 	}
-	--len;
 
-	if (len > 0) {
-		if (dir[len] == '/')
-			dir[len] = '\0';
+	while (len > 0 && dir[len] == '/') {
+		dir[len] = '\0';
+		--len;
 	}
 }
 
