@@ -5,7 +5,7 @@
 # terms of the GNU General Public License, see the file COPYING.
 #
 
-setenv VSPMS_REVISION V0210b2
+setenv VSPMS_REVISION V0210b3
 
 #initial values
 #(we test environment vars in case this file is re-sourced during a session,
@@ -35,14 +35,14 @@ alias pjrestore '/bin/rm -f $PROJECT_ENV; sed -e '"'"'s/;.*/>\/dev\/null/;s/^/pu
 # If ... is undefined, then the rest of the command string will not
 # be executed, preventing un-sightly error messages.
 
-alias lspj 'cat $MYPROJECTS'
+alias lspj 'wherepj -lspj'
 alias newpjenv setenv MYPROJECTS \!^
 
 # the current project environment.
 # yes, use "wherepj !*", in case no args
 
 #NOTE: hp csh requires spaces in the "set tmp=( `...` )" expression
-alias chpj 'pjhomeinit; set tmp=( `wherepj \!*` $PROJECT ); cd $tmp[1]; edpjenv del $PROJECT/$SBPJ; setenv PROJECT $tmp[1]; edpjenv set $cwd $PROJECT .; setenv REV ""; setenv SBPJ "."; dirs; pjrc; echo $REV'
+alias chpj 'pjhomeinit; set tmp=( `wherepj \!*` $PROJECT ); set tmp=(`eval echo $tmp`); cd $tmp[1]; edpjenv del $PROJECT/$SBPJ; setenv PROJECT $tmp[1]; edpjenv set $cwd $PROJECT .; setenv REV ""; setenv SBPJ "."; dirs; pjrc; echo $REV'
 
 #note - tmp is set to `wherepj ...` so that pushd will not see args if
 #none echoed, causing it to swap top two elements
@@ -50,7 +50,7 @@ alias chpj 'pjhomeinit; set tmp=( `wherepj \!*` $PROJECT ); cd $tmp[1]; edpjenv 
 # the "reset $sav..." is to save an "implied" subpj, i.e. if a cd is done
 # prior the pushpj.
 
-alias pushpj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj \!*`; pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv REV ""; pjrc; echo $REV'
+alias pushpj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj \!*`; set tmp=(`eval echo $tmp`); pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv REV ""; pjrc; echo $REV'
 
 alias swpj 'pushpj'
 
@@ -63,7 +63,7 @@ alias subpj 'pjhomeinit; set tmp=( \!* $SBPJ ); cd $PROJECT/$tmp[1]; edpjenv del
 
 #note the -s flag to wherepj.  this causes wherepj to echo $PROJECT/!$
 #unless the arg is of the +n variety
-alias pushspj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj -s \!*`; pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; if ($tmp[2] == '.') set tmp[2]=\!*; setenv SBPJ $tmp[2]; edpjenv set $cwd $PROJECT $SBPJ; echo $REV'
+alias pushspj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj -s \!*`; set tmp=(`eval echo $tmp`); pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; if ($tmp[2] == '.') set tmp[2]=\!*; setenv SBPJ $tmp[2]; edpjenv set $cwd $PROJECT $SBPJ; echo $REV'
 
 #same as poppj - just in case the popped dir is not really a subpj.
 alias popspj 'poppj'
