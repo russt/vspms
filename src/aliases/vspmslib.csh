@@ -1,4 +1,11 @@
-# VSPMS command aliases
+#
+# vspmslib.csh - VSPMS command aliases for csh & tcsh.
+# Copyright (C) 1990, 1996 Russ Tremain
+# This is free software; you can redistribute it and/or modify it under the
+# terms of the GNU General Public License, see the file COPYING.
+#
+
+setenv VSPMS_REVISION V0210b2
 
 #initial values
 #(we test environment vars in case this file is re-sourced during a session,
@@ -6,20 +13,23 @@
 if !($?PROJECT)		setenv PROJECT ~
 if !($?SBPJ)		setenv SBPJ .
 if !($?REV)		setenv REV ""
-if !($?MAKEMF_LIB)	setenv MAKEMF_LIB /usr/local/lib/makemf
+if !($?PROJECTRC)		setenv PROJECTRC '.projectrc'
+
+#
 #this is the file where we store the project environment for a single
-#login session.  should set to /tmp/pjenv$$ if you want to have multiple
-#login sessions going:
-if !($?PROJECT_ENV)	setenv PROJECT_ENV /tmp/pjenv.$USER
-#base save file on hostname, for nfs mounted home dir:
+#login session.
+#
+if !($?PROJECT_ENV)	setenv PROJECT_ENV "/tmp/${USER}_pjenv.$$"
+
+#we base the project save file on hostname, for nfs mounted home directories:
 if !($?PROJECT_SAVE)	setenv PROJECT_SAVE ~/.pjenv.`hostname`
+
 alias rmpjenv /bin/rm -f $PROJECT_ENV
-alias pjsave '/bin/rm -f $PROJECT_SAVE;/bin/mv $PROJECT_ENV $PROJECT_SAVE>&/dev/null'
-#NOTE (pjout): if the exit fails (due to suspended jobs), then do not repeat
-#pjout command or PROJECT_SAVE file will be trashed.
-alias pjout 'pjsave;exit'
+alias pjsave '/bin/rm -f $PROJECT_SAVE;/bin/cp $PROJECT_ENV $PROJECT_SAVE>&/dev/null'
+alias pjclean '/bin/rm -f $PROJECT_ENV $PJHOME_ALIAS $PJHOME_ENV $PJCURR_ALIAS $PJCURR_ENV'
+alias pjout 'pjsave; pjclean; exit'
 #if save file doesn't exist this will create empty environment file
-alias pjrestore sed -e "'"'s/;.*/>\/dev\/null/;s/^/pushd /;1s/pushd/cd/;$s/$/;pushd ~ >\/dev\/null/'"'" '$PROJECT_SAVE >! $PROJECT_ENV; source  $PROJECT_ENV;/bin/cp $PROJECT_SAVE $PROJECT_ENV;dirs'
+alias pjrestore '/bin/rm -f $PROJECT_ENV; sed -e '"'"'s/;.*/>\/dev\/null/;s/^/pushd /;1s/pushd/cd/;$s/$/;pushd ~ >\/dev\/null/'"'" '$PROJECT_SAVE> $PROJECT_ENV; source  $PROJECT_ENV;/bin/cp $PROJECT_SAVE $PROJECT_ENV;dirs'
 
 # note the trick "echo ...>& /dev/null" used in some of the aliases.
 # If ... is undefined, then the rest of the command string will not
@@ -28,14 +38,11 @@ alias pjrestore sed -e "'"'s/;.*/>\/dev\/null/;s/^/pushd /;1s/pushd/cd/;$s/$/;pu
 alias lspj 'cat $MYPROJECTS'
 alias newpjenv setenv MYPROJECTS \!^
 
-alias pci 'echo $REV; ci -N$REV \!*'
-alias pco 'echo $REV; co -r$REV \!*'
-
-# chpj with no args will cd to the "current" project, and resource
 # the current project environment.
 # yes, use "wherepj !*", in case no args
 
-alias chpj 'set tmp=(`wherepj \!*` $PROJECT); cd $tmp[1]; edpjenv del $PROJECT/$SBPJ; setenv PROJECT $tmp[1]; edpjenv set $cwd $PROJECT .; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; setenv SBPJ "."; dirs; source .projectrc>&/dev/null; echo $REV'
+#NOTE: hp csh requires spaces in the "set tmp=( `...` )" expression
+alias chpj 'pjhomeinit; set tmp=( `wherepj \!*` $PROJECT ); cd $tmp[1]; edpjenv del $PROJECT/$SBPJ; setenv PROJECT $tmp[1]; edpjenv set $cwd $PROJECT .; setenv REV ""; setenv SBPJ "."; dirs; pjrc; echo $REV'
 
 #note - tmp is set to `wherepj ...` so that pushd will not see args if
 #none echoed, causing it to swap top two elements
@@ -43,26 +50,62 @@ alias chpj 'set tmp=(`wherepj \!*` $PROJECT); cd $tmp[1]; edpjenv del $PROJECT/$
 # the "reset $sav..." is to save an "implied" subpj, i.e. if a cd is done
 # prior the pushpj.
 
-alias pushpj 'set sav=$cwd; set tmp=`wherepj \!*`; pushd $tmp; edpjenv reset $sav $PROJECT $SBPJ; set tmp=`edpjenv get $cwd`; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; source $PROJECT/.projectrc>&/dev/null; echo $REV'
+alias pushpj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj \!*`; pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv REV ""; pjrc; echo $REV'
 
 alias swpj 'pushpj'
 
-#note - poppj doesn't work with +n arg
+alias poppj 'pjhomeinit; popd \!*; set tmp=`edpjenv get $cwd`; edpjenv del $PROJECT/$SBPJ; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv REV ""; pjrc; echo $REV'
 
-alias poppj 'popd; edpjenv del $PROJECT/$SBPJ; set tmp=`edpjenv get $cwd`; setenv PROJECT $tmp[1]; setenv SBPJ $tmp[2]; setenv MAKEMF_LIB /usr/local/lib/makemf; setenv REV ""; source $PROJECT/.projectrc>&/dev/null; echo $REV'
-
-alias pjenv 'echo "PROJECT:	$PROJECT";echo "SUB-PROJECT:	$SBPJ";echo "REVISION:	$REV";echo "MYPROJECTS:	$MYPROJECTS";echo "MAKEMF_LIB:	$MAKEMF_LIB";dirs'
+alias pjenv 'echo "PROJECT:	$PROJECT";echo "SUB-PROJECT:	$SBPJ";echo "REVISION:	$REV";echo "MYPROJECTS:	$MYPROJECTS";dirs'
 
 #no args - back to the "current" subpj, which is the parent project
-alias subpj 'set tmp=(\!* $SBPJ);cd $PROJECT/$tmp[1]; edpjenv del $PROJECT/$SBPJ;setenv SBPJ $tmp[1]; edpjenv set $cwd $PROJECT $SBPJ; dirs; echo $REV'
+alias subpj 'pjhomeinit; set tmp=( \!* $SBPJ ); cd $PROJECT/$tmp[1]; edpjenv del $PROJECT/$SBPJ;setenv SBPJ $tmp[1]; edpjenv set $cwd $PROJECT $SBPJ; dirs; echo $REV'
 
 #note the -s flag to wherepj.  this causes wherepj to echo $PROJECT/!$
 #unless the arg is of the +n variety
-alias pushspj 'set sav=$cwd; set tmp=`wherepj -s \!*`; pushd $tmp; edpjenv reset $sav $PROJECT $SBPJ; set tmp=`edpjenv get $cwd`; if ($tmp[2] == '.') set tmp[2]=\!*; setenv SBPJ $tmp[2]; edpjenv set $cwd $PROJECT $SBPJ; echo $REV'
+alias pushspj 'pjhomeinit; set sav=$cwd; set tmp=`wherepj -s \!*`; pushd $tmp; set tmp=`edpjenv get $cwd`; edpjenv reset $sav $PROJECT $SBPJ; if ($tmp[2] == '.') set tmp[2]=\!*; setenv SBPJ $tmp[2]; edpjenv set $cwd $PROJECT $SBPJ; echo $REV'
 
-#note the first echo is for feedback and to prevent mangling the project
-#file if no argument is provided:
-alias addpj 'echo "\!^	$cwd"; echo "\!^	$cwd" >>! $MYPROJECTS'
-
-alias swspj 'pushspj'
+#same as poppj - just in case the popped dir is not really a subpj.
 alias popspj 'poppj'
+
+alias addpj	'echo \!^	$cwd >> $MYPROJECTS'
+alias delpj	'wherepj -d \!*'
+
+#
+#home state additions, 10/6/96
+#
+if !($?PJHOMEINITD) set PJHOMEINITD=0
+if ($?PJTESTING) echo PJHOMEINITD is $PJHOMEINITD
+setenv PJHOME_ALIAS "/tmp/${USER}_home_alias.$$"
+setenv PJHOME_ENV "/tmp/${USER}_home_env.$$"
+setenv PJCURR_ALIAS "/tmp/${USER}_curr_alias.$$"
+setenv PJCURR_ENV "/tmp/${USER}_curr_env.$$"
+
+#
+#PJENV_READONLY - list of vars to never reset when restoring home project state.
+#typically, this should ONLY be variables related to the current directory.
+#
+set tmp="PWD,PROJECT,SBPJ"
+if ($?PJENV_READONLY) then
+	if ($tmp != $PJENV_READONLY) then
+		#allow user to add to this variable:
+		setenv PJENV_READONLY "$tmp,PWD,PROJECT,SBPJ"
+	endif
+else
+	setenv PJENV_READONLY "$tmp"
+endif
+unset tmp
+
+#
+#development note:
+#	this alias gave me much difficulty, primarily due
+#	to 'noclobber' setting - if noclobber set, i/o redirection (via >!)
+#	of setenv & alias commands is unreliable.  use rm -f instead.
+#
+alias pjhomeinit 'if !($PJHOMEINITD) eval "/bin/rm -f $PJHOME_ENV $PJHOME_ALIAS; env> $PJHOME_ENV; alias> $PJHOME_ALIAS; set PJHOMEINITD=1"'
+alias pjsavecurr	'/bin/rm -f $PJCURR_ENV $PJCURR_ALIAS; env> $PJCURR_ENV; alias> $PJCURR_ALIAS'
+alias pjrestorehome	'pjsavecurr; eval `homepj`'
+#DEBUG: alias pjrestorehome	'pjsavecurr; homepj'
+alias pjrc	'pjrestorehome; if (-r $PROJECT/$PROJECTRC) source $PROJECT/$PROJECTRC'
+
+alias pjresethome 'set PJHOMEINITD=0; pjhomeinit'
