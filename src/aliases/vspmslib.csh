@@ -83,13 +83,15 @@ setenv PJCURR_ENV "/tmp/${USER}_curr_env.$$"
 
 #
 #PJENV_READONLY - list of vars to never reset when restoring home project state.
-#typically, this should ONLY be variables related to the current directory.
+#typically, this should ONLY be variables related to the current directory,
+#or variables reset by the chpj alias (such as REV).
 #
-set tmp="PWD,PROJECT,SBPJ"
+set tmp="PWD,PROJECT,SBPJ,REV,MYPROJECTS"
 if ($?PJENV_READONLY) then
+	#if defined and non-standard...
 	if ($tmp != $PJENV_READONLY) then
-		#allow user to add to this variable:
-		setenv PJENV_READONLY "$tmp,PWD,PROJECT,SBPJ"
+		#...include user additions:
+		setenv PJENV_READONLY "$tmp,$PJENV_READONLY"
 	endif
 else
 	setenv PJENV_READONLY "$tmp"
