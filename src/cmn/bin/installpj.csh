@@ -80,6 +80,46 @@ Brief guide to VSPMS commands:
 
 	pjenv			prints the current project environment.
 
+	newpjenv filename
+		change project index file to filename.
+
+	pci rcs_file
+		check in a file with the current project revision label.
+
+	pco rcs_file
+		check out a file with the current project revision label.
+
+	========================== SUBPROJECTS ==========================
+
+	subpj [sub_project_dir]
+		change to a new sub-project.  Sub-projects are names
+		of directories under the "main" project name, i.e.,
+		if the project is comprised of directories:
+
+			/usr/myproject/src/{include,lib,bin}
+
+		and the main project directory is /usr/myproject/src,
+		then possible sub-projects are:
+
+			{include,lib,bin}
+
+		The .projectrc file for the project only needs to
+		be created in the root project directory.  Thus
+		sub-projects are defined to be all sub-trees
+		sharing the same .projectrc file (and hence a
+		common REV label, if there is one.)
+
+	popspj [+n]
+		pop a sub-project off the directory stack.
+
+	pushspj [+n] [proj_name]
+		push a new sub-project on directory stack.
+
+	swspj
+		switch between the top two subprojects on the directory
+		stack.  Should only be used to switch between
+		sub-projects sharing the same parent project.
+
 To use these commands, you must define the following environment
 variable:
 
@@ -94,8 +134,7 @@ project environment - here is an example:
 
 		# standard .projectrc file
 		setenv REV V0210d4
-		alias pci "echo $REV; ci -N$REV \!*"
-		alias pco "echo $REV; co -r$REV \!*"
+		setenv MAKEMF_LIB /usr/myproject/makemf
 
 If you allowed installpj to modify your .cshrc file, then issue the command:
 
