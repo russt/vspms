@@ -1,7 +1,5 @@
 #!/bin/perl -w
 
-#require "dumpvar.pl";
-
 $p = "homepj";
 
 #get environment vars:
@@ -25,9 +23,9 @@ sub gen_resetenv
 
 	return if ($#HV < 0);
 
-	@reset = grep($CVT{$_} && $HVT{$_} && ($CVT{$_} ne $HVT{$_}), @HV);
-#&dumpvar('main', 'reset', 'CVT', 'HVT', 'HV');
-#&dumpvar('main', 'reset', 'HV');
+	@reset = grep(defined($CVT{$_}) && defined($HVT{$_}) && $CVT{$_} ne $HVT{$_}, @HV);
+
+#printf STDERR "HV=(%s)[%d]\nCV=(%s)[%d]\nreset=(%s)[%d]\n", join(',', @HV), $#HV, join(',', @CV), $#CV, join(',', @reset), $#reset;
 	for (@reset) {
 		if (/\'/) {
 			$tmp = ($HVT{$_} =~ s/\$/\\\$/g);
@@ -69,8 +67,9 @@ sub read_data
 #printf STDERR ("HA=(%s)[%d]\nCA=(%s)[%d]\n", join(',', @HA), $#HA, join(',', @CA), $#CA);
 
 	#get rid of read-only vars, PJ* vars:
-	@HV = grep(!$PJENV_READONLY{$_} && !/PJ/ && !/PROJ/, @HV);
-	@CV = grep(!$PJENV_READONLY{$_} && !/PJ/ && !/PROJ/, @CV);
+	@HV = grep(!$PJENV_READONLY{$_}, @HV);
+	@CV = grep(!$PJENV_READONLY{$_}, @CV);
+#printf STDERR ("HV=(%s)[%d]\nCV=(%s)[%d]\n", join(',', @HV), $#HV, join(',', @CV), $#CV);
 }
 
 sub init_data
@@ -116,7 +115,6 @@ sub init_env
 		eval($evalstr);
 	}
 
-#&dumpvar('main', @envlist);
 	for ((split(',', $PJENV_READONLY)), @envlist) {
 		$PJENV_READONLY{$_}++;
 	}
