@@ -1,20 +1,21 @@
 # VSPMS command aliases
 
-#this is the filename used to store the project environment for a single
-#login session.  It should be removed upon logout
-
 #initial values
-#(we test project, sub-project vars in case this file is
-# re-sourced during a session):
-if !($?PROJECT) setenv PROJECT ~
-if !($?SBPJ) setenv SBPJ .
-if !($?REV) setenv REV ""
-setenv PROJECT_ENV /tmp/pjenv$$
-# this can be overridden prior to sourcing this file
-if !($?PROJECT_SAVE) setenv PROJECT_SAVE ~/.pjenv
+#(we test environment vars in case this file is re-sourced during a session,
+# or user overrides defaults):
+if !($?PROJECT)		setenv PROJECT ~
+if !($?SBPJ)		setenv SBPJ .
+if !($?REV)		setenv REV ""
+if !($?MAKEMF_LIB)	setenv MAKEMF_LIB /usr/local/lib/makemf
+#this is the file where we store the project environment for a single
+#login session.  should set to /tmp/pjenv$$ if you want to have multiple
+#login sessions going:
+if !($?PROJECT_ENV)	setenv PROJECT_ENV /tmp/pjenv.$USER
+#base save file on hostname, for nfs mounted home dir:
+if !($?PROJECT_SAVE)	setenv PROJECT_SAVE ~/.pjenv.`hostname`
 alias rmpjenv /bin/rm -f $PROJECT_ENV
-alias pjout 'pjsave;exit'
 alias pjsave '/bin/rm -f $PROJECT_SAVE;/bin/mv $PROJECT_ENV $PROJECT_SAVE>&/dev/null'
+alias pjout 'pjsave;exit'
 #if save file doesn't exist this will create empty environment file
 alias pjrestore sed -e "'"'s/;.*/>\/dev\/null/;s/^/pushd /;1s/pushd/cd/;$s/$/;pushd ~ >\/dev\/null/'"'" '$PROJECT_SAVE >! $PROJECT_ENV; source  $PROJECT_ENV;/bin/cp $PROJECT_SAVE $PROJECT_ENV;dirs'
 
