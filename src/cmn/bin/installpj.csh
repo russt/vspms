@@ -42,6 +42,10 @@ $a
 if (-r /usr/local/lib/vspms.aliases) then			#VSPMS
 	source /usr/local/lib/vspms.aliases			#VSPMS
 endif								#VSPMS
+set VSPMSLIB=/usr/local/lib					#VSPMS
+if (-r $VSPMSLIB/vspms.aliases) then				#VSPMS
+	source $VSPMSLIB/vspms.aliases				#VSPMS
+endif								#VSPMS
 .
 w
 q
