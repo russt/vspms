@@ -1,0 +1,144 @@
+#!/bin/perl -w
+
+#require "dumpvar.pl";
+
+$p = "homepj";
+
+#get environment vars:
+&init_env;
+
+&read_data;
+
+print "set noglob;\n";
+&gen_unalias;
+&gen_unsetenv;
+&gen_resetenv;
+print "unset noglob;\n";
+
+exit 0;
+&squawk_off;
+
+sub gen_resetenv
+#reset any changed home env variables to original values
+{
+	local (@reset, $tmp);
+
+	return if ($#HV < 0);
+
+	@reset = grep($CVT{$_} && $HVT{$_} && ($CVT{$_} ne $HVT{$_}), @HV);
+#&dumpvar('main', 'reset', 'CVT', 'HVT', 'HV');
+#&dumpvar('main', 'reset', 'HV');
+	for (@reset) {
+		if (/\'/) {
+			$tmp = ($HVT{$_} =~ s/\$/\\\$/g);
+			printf("setenv %s \"%s\";\n", $_, $tmp);
+		} else {
+			printf("setenv %s '%s';\n", $_, $HVT{$_});
+		}
+	}
+}
+
+sub gen_unsetenv
+#unset env added by project environments.
+{
+	return if ($#HV < 0 || $#CV < 0);
+	local(@NEW) = &MINUS(*CV, *HV);
+	for (@NEW) {
+		print "unsetenv $_;\n";
+	}
+}
+
+sub gen_unalias
+{
+	return if ($#HA < 0 || $#CA < 0);
+	local(@NEW) = &MINUS(*CA, *HA);
+	for (@NEW) {
+		print "unalias $_;\n";
+	}
+}
+
+sub read_data
+{
+	@HA=(); @CA=(); @HV=(); @CV=();
+	%HAT=(); %CAT=(); %HVT=(); %CVT=();
+	&init_data(*HA, *HAT, $PJHOME_ALIAS, "\t");
+	&init_data(*CA, *CAT, $PJCURR_ALIAS, "\t");
+	&init_data(*HV, *HVT, $PJHOME_ENV, "=");
+	&init_data(*CV, *CVT, $PJCURR_ENV, "=");
+
+#printf STDERR ("HA=(%s)[%d]\nCA=(%s)[%d]\n", join(',', @HA), $#HA, join(',', @CA), $#CA);
+
+	#get rid of read-only vars, PJ* vars:
+	@HV = grep(!$PJENV_READONLY{$_} && !/PJ/ && !/PROJ/, @HV);
+	@CV = grep(!$PJENV_READONLY{$_} && !/PJ/ && !/PROJ/, @CV);
+}
+
+sub init_data
+{
+	local(*list, *tab, $fn, $SEP) = @_;
+
+	if (!open(INFILE, $fn)) {
+		printf STDERR ("%s: can't open '%s'\n", $p, $fn);
+		return(0);
+	}
+
+	@list = ();
+	%tab = ();
+	while(<INFILE>) {
+		chop;
+		next if (/^\s*$/);
+		m/^([^$SEP]*)$SEP(.*)/;
+		$tab{$1} = $2;
+	}
+	close(INFILE);
+
+	@list = keys %tab;
+
+	return(0) if ($#list < 0);
+	return($#list +1);
+}
+
+sub init_env
+#read in relevant VSPMS project environment variable defs
+{
+	local (@envlist) = (
+		'PJHOME_ALIAS', 'PJHOME_ENV', 'PJCURR_ALIAS',
+		'PJCURR_ENV', 'PJENV_READONLY', 'SHELL',
+	);
+
+	for $var (@envlist) {
+		if (defined($env = $ENV{$var})) {
+			$evalstr = "\$$var = '$env'";
+		} else {
+			$evalstr = "\$$var = 'NULL'";
+		}
+#printf STDERR ("%s\n", $evalstr);
+		eval($evalstr);
+	}
+
+#&dumpvar('main', @envlist);
+	for ((split(',', $PJENV_READONLY)), @envlist) {
+		$PJENV_READONLY{$_}++;
+	}
+}
+
+sub MINUS
+#returns A - B
+#usage:  local (@a, @b); ... ; @difference = &MINUS(*a, *b);
+{
+	local (*A, *B) = @_;
+	local (%mark);
+
+	for (@B) { $mark{$_}++;}
+	return(grep(!$mark{$_}, @A));
+}
+
+sub squawk_off
+{
+	*PJHOME_ALIAS = *PJHOME_ALIAS;
+	*PJHOME_ENV = *PJHOME_ENV;
+	*PJCURR_ALIAS = *PJCURR_ALIAS;
+	*PJCURR_ENV = *PJCURR_ENV;
+	*PJENV_READONLY = *PJENV_READONLY;
+	*SHELL = *SHELL;
+}
