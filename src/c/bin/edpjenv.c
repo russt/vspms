@@ -1,5 +1,9 @@
 #include <stdio.h>
-#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define DEBUG
+#undef DEBUG
 
 #define USAGE_SET	"Usage:  %s set dir project [subproj|+n]\n"
 #define USAGE_RESET	"Usage:  %s reset dir old_project old_subpj\n"
@@ -9,8 +13,9 @@
 #define		streq(s1,s2)	(strcmp(s1,s2) == 0)
 
 /* storage for parsed environment var: */
-#define MAXENV	20
-#define MAXLEN	100
+#define MAXENV	512
+#define MAXLEN	1024
+#define MAXBUF	MAXENV * MAXLEN
 char dirEnv[MAXENV][MAXLEN];
 char projEnv[MAXENV][MAXLEN];
 char sbpjEnv[MAXENV][MAXLEN];
@@ -53,7 +58,7 @@ int argc;
 char *argv[];
 char *envp[];
 {
-	char buf[BUFSIZ], *p;
+	char buf[MAXBUF], *p;
 	char dir[MAXLEN];
 	char proj[MAXLEN];
 	char subpj[MAXLEN];
@@ -152,6 +157,9 @@ char *proj, *subpj;
 {
 	register int i;
 
+/*
+fprintf(stderr,"set: dir='%s' proj='%s' subpj='%s'\n", dir,proj,subpj);
+*/
 	for (i=0; i< nEnv; i++) {
 		if (streq(dir,dirEnv[i])) {
 			strcpy(dirEnv[i],dir);
@@ -186,10 +194,25 @@ getpjenv(dir)
 register char *dir;
 {
 	register int i;
+	char newsubpj[MAXLEN];
 
 	for (i=0; i< nEnv; i++) {
 		if (streq(dir,dirEnv[i])) {
 			printf("%s %s\n",projEnv[i],sbpjEnv[i]);
+			return;
+		}
+	}
+
+/*
+printf("NO MATCH - trying getsubpj\n");
+*/
+	/* no directory match - try project: */
+	for (i=0; i< nEnv; i++) {
+		if (getsubpj(newsubpj, projEnv[i], dir)) {
+			printf("%s %s\n",projEnv[i],newsubpj);
+
+			/* enter in cache: */
+			setpjenv(dir,projEnv[i],newsubpj);
 			return;
 		}
 	}
@@ -232,10 +255,14 @@ char *proj, *subpj;
 	char tmp[MAXLEN], *p;
 	register int i;
 	int is_subpj;
+	char newsubpj[MAXLEN];
 
-	strcpy(tmp,dir);
-	tmp[strlen(proj)] = '\0';
-	is_subpj = streq(tmp,proj);
+
+	is_subpj = getsubpj(newsubpj, proj, dir);
+
+/*
+fprintf(stderr,"RESET: dir='%s' proj='%s' subpj='%s' is_subpj=%d\n", dir,proj,subpj,is_subpj);
+*/
 
 	sprintf(tmp,"%s/%s",proj,subpj);	/* formulate search key */
 	normalize(tmp);
@@ -245,10 +272,10 @@ char *proj, *subpj;
 			strcpy(dirEnv[i],dir);
 			if (is_subpj) {
 				strcpy(projEnv[i],proj);
-				/* the new sub-project is derived from dir: */
-				strcpy(sbpjEnv[i], &dir[strlen(proj)+1]);
-				if (sbpjEnv[i][0] == '\0')
+				if (newsubpj[0] == '\0')
 					strcpy(sbpjEnv[i],".");
+				else
+					strcpy(sbpjEnv[i], newsubpj);
 			}
 			else {
 				/* o'wise, use defaults: */
@@ -260,6 +287,13 @@ char *proj, *subpj;
 			return;
 		}
 	}
+
+	/* if not found, then enter in cache: */
+
+	if (is_subpj)
+		setpjenv(dir,proj,newsubpj);
+	else
+		setpjenv(dir,proj,subpj);
 }
 
 updateEnv()
@@ -296,7 +330,7 @@ parseEnv()
 */
 {
 	register int j;
-	char buf[BUFSIZ*4];
+	char buf[MAXBUF];
 	register char *p = buf;
 	FILE *fp;
 
@@ -306,7 +340,7 @@ parseEnv()
 	*p = '\0';
 	if ((fp = fopen(pjenv_fn,"r")) != NULL) {
 		/* ...then read the whole file into a buf: */
-		fread(p,BUFSIZ*4,1,fp);
+		fread(p,MAXBUF,1,fp);
 		fclose(fp);
 	}
 
@@ -331,6 +365,10 @@ parseEnv()
 
 		nEnv++;
 	}
+
+#ifdef DEBUG
+	dumpEnv();
+#endif	DEBUG
 }
 
 normalize(dir)
@@ -370,3 +408,39 @@ dumpEnv()
 
 }
 #endif	DEBUG
+
+int
+getsubpj(sub, root, full)
+/*
+**
+*/
+char *sub;	/* result */
+char *root;	/* project */
+char *full;		/* project */
+{
+	int lroot = strlen(root);
+	int lfull = strlen(full);
+	char tmp[MAXLEN];
+
+	sub[0] = '\0';
+
+	if (lroot >= lfull)
+		return(0);
+
+	strncpy(tmp, full, lroot);
+	tmp[lroot] = '\0';
+/*
+printf("tmp='%s' root='%s'[%d] full='%s'[%d] full[%d]='%c'\n",
+tmp, root,lroot,full,lfull,lroot,full[lroot]);
+*/
+
+	if (streq(tmp,root)) {
+		if (root[lroot-1] == '/')
+			--lroot;
+
+		strcpy(sub, &full[lroot+1]);
+		return(1);
+	}
+
+	return(0);
+}
