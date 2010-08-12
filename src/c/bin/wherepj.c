@@ -169,7 +169,7 @@ char fn[];
 			fprintf(stdout, "<%s INCLUDE %s>\n", (result == 0 ? "END" : "FAILED"), projdir(buf));
 			nerrs += result;
 		} else {
-			fputs(buf,stdout);
+			fprintf(stdout, "%s\t%s\n", proj, projdir(buf));
 		}
 	}
 
