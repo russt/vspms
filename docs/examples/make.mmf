@@ -1,0 +1,12 @@
+TEMPLATE = file.mmf
+
+DESTRULE = dist_except_cmn
+
+PKG      = packages/${TARGET_OS}/vspms/examples
+DEST     = ${BASE}/${PKG}
+MODE     = 0444
+
+#set to -check or -nocheck:
+CHECK    = -nocheck
+
+FILES   = aliases.ksh aliases.sh bash_profile.sh cshrc.csh kshrc.ksh login.csh logout.csh logout.ksh profile.ksh profile.sh projectrc.ksh

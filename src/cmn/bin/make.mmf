@@ -1,0 +1,12 @@
+TEMPLATE = file.mmf
+
+DESTRULE = dist_except_cmn
+
+PKG      = packages/${TARGET_OS}/vspms/bin
+DEST     = ${BASE}/${PKG}
+MODE     = 0444
+
+#set to -check or -nocheck:
+CHECK    = -check
+
+FILES   = homepj.prl installpj.csh newshell.prl optpath.prl pjcleantmp.prl runinpj.csh whatport.sh

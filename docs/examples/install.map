@@ -1,0 +1,13 @@
+TARGET_OS=cmn,ntcmn
+aliases.ksh	packages/${TARGET_OS}/vspms/examples/aliases.ksh	0444
+aliases.sh	packages/${TARGET_OS}/vspms/examples/aliases.sh	0444
+bash_profile.sh	packages/${TARGET_OS}/vspms/examples/bash_profile.sh	0444
+cshrc.csh	packages/${TARGET_OS}/vspms/examples/cshrc.csh	0444
+kshrc.ksh	packages/${TARGET_OS}/vspms/examples/kshrc.ksh	0444
+login.csh	packages/${TARGET_OS}/vspms/examples/login.csh	0444
+logout.csh	packages/${TARGET_OS}/vspms/examples/logout.csh	0444
+logout.ksh	packages/${TARGET_OS}/vspms/examples/logout.ksh	0444
+profile.ksh	packages/${TARGET_OS}/vspms/examples/profile.ksh	0444
+profile.sh	packages/${TARGET_OS}/vspms/examples/profile.sh	0444
+projectrc.ksh	packages/${TARGET_OS}/vspms/examples/projectrc.ksh	0444
+

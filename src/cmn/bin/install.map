@@ -1,0 +1,10 @@
+TARGET_OS=cmn & sh, ntcmn & sh
+homepj.prl	packages/${TARGET_OS}/vspms/bin/homepj	0555
+newshell.prl	packages/${TARGET_OS}/vspms/bin/newshell	0555
+optpath.prl	packages/${TARGET_OS}/vspms/bin/optpath	0555
+pjcleantmp.prl	packages/${TARGET_OS}/vspms/bin/pjcleantmp	0555
+
+TARGET_OS=cmn, ntcmn
+installpj.csh	packages/${TARGET_OS}/vspms/bin/installpj	0555
+runinpj.csh	packages/${TARGET_OS}/vspms/bin/runinpj	0555
+whatport.sh	packages/${TARGET_OS}/vspms/bin/whatport	0555

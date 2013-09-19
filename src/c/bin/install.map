@@ -1,0 +1,4 @@
+TARGET_OS=cmn,ntcmn
+edpjenv.c	packages/${TARGET_OS}/vspms/src/edpjenv.c	0444
+wherepj.c	packages/${TARGET_OS}/vspms/src/wherepj.c	0444
+

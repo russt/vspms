@@ -1,0 +1,4 @@
+TARGET_OS=cmn,ntcmn
+HowToSetupVspms.html	packages/${TARGET_OS}/vspms/docs/HowToSetupVspms.html	0444
+vspms_intro.txt	packages/${TARGET_OS}/vspms/docs/vspms_intro.txt	0444
+

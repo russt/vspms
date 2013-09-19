@@ -1,0 +1,387 @@
+<HTML>
+<HEAD>
+<TITLE>VSPMS</TITLE>
+<H2 align="center">VSPMS<BR>
+  (Very Simple Project Management System)</H2>
+<H3>Contents: </H3>
+<UL>
+  <LI> <A href="#vspms">What Is VSPMS</A></LI>
+  <LI> <A href="#using">Using VSPMS</A></LI>
+  <LI> <A href="#install">How To Install VSPMS</A></LI>
+  <LI> <A href="#env">Set Your Environment</A></LI>
+  <LI><A href="#projects">Managing Projects</A></LI>
+</UL>
+<H3><A name="vspms"></A>What Is VSPMS</H3>
+<P>VSPMS, a "Very Simple Project Management System", allows the user
+to maintain multiple 'projects' each with a unique collection of predefined
+environment settings.  A project is associated with a directory on disk.
+The system keeps a list of your 'projects' in an index
+file so that they can be quickly located. </P>
+<P>The primary benefit of this package is that it allows you to specify a well-defined
+and protected environment for your projects. A very important second benefit
+is that it allows you to easily share your setup information and project locations
+with coworkers. For example each working directory can have it's own project
+file which will define the environment for that working directory. </P>
+<H3><A name="using"></A>Using VSPMS</H3>
+<P>After <A href="#install">installing</A> VSPMS, use the guide below to manage
+your projects. </P>
+<PRE>
+Brief guide to VSPMS commands:
+
+     alias            description:
+     ----------------------------------------------------------------
+     lspj    lists your project names and locations.
+
+     addpj [project_name]
+        add the current working directory as "project_name". project_name
+        should be short and easy to remember.
+        Example:
+        %cd ~/some/directory
+        %addpj myproject
+
+     chpj [project_name]
+        changes the current project to "project_name",
+        and sources the $PROJECTRC file to establish
+        the project environment.  If no name is given,
+        reestablishes the current project environment.
+        Example:
+        %chpj ffjbuild
+
+     pushpj [project_name|+n]
+        pushes the named project on the directory
+        stack.  With no arguments, exchanges the
+        top two projects.  The +n form rotates the
+        nth project to the top of the stack. (Same
+        semantics as pushd.)  Note that if you have
+        a project defined as a sub-directory of
+        another project, pushpj gets confused.  To
+        recover, use chpj to reenter the project.
+
+     poppj  pops the top project of the directory
+        stack
+
+     pjenv  prints the current project environment.
+
+     newpjenv filename
+        change project index file to filename.
+
+     pjresethome <b>(csh/tcsh only)</b>
+        Make the current environment the "base" environment.
+        This command saves your current environment variable
+        definitions and your current alias definitions to disk.
+        Each time you change to a new project, All variables
+        and aliases not in your base environment are deleted.
+        Environment variables whose definitions have changed
+        are reset to the original value.  However, alias that have
+        been changed retain their new definition. (This is due
+        to the technical difficulties in restoring aliases to
+        their original form when they involve complicated quoting.
+        Because of this, you should consider any alias you define
+        in your home environment as global and read-only.)
+
+    pjcleantmp
+        Removes inactive VSPMS temporary files from /tmp
+
+     pjname
+        Returns the current project name.  Useful for adding the
+        project name to prompt.  Use with setprompt alias.
+
+            alias setprompt 'set prompt="{`pjname` \!} "'
+
+     ========================== SUBPROJECTS ==========================
+
+     subpj [sub_project_dir]
+        change to a new sub-project.  Sub-projects are names
+        of directories under the "main" project name, i.e.,
+        if the project is comprised of directories:
+
+            /usr/myproject/src/{include,lib,bin}
+
+        and the main project directory is /usr/myproject/src,
+        then possible sub-projects are:
+
+            {include,lib,bin}
+
+        In this example:
+
+            subpj .   #will take you to /usr/myproject/src/. (the root)
+            subpj lib   #will take you to the /usr/myproject/src/lib
+
+        ####
+        The $PROJECTRC (.projectrc) file for the project only needs to
+        be created in the root project directory.  Thus
+        sub-projects are defined to be all sub-trees
+        sharing the same .projectrc file (and hence a
+        common REV label, if there is one.)
+
+     popspj
+        pop a sub-project off the directory stack.
+
+     pushspj [+n] [proj_name]
+        push a new sub-project on directory stack.
+</verbatim></PRE>
+<H3><A name="install"></A>How To Install VSPMS</H3>
+<P>Installing VSPMS consists of downloading the VSPMS package, and extracting
+the package contents, and setting up your startup files. </P>
+<OL>
+  <LI>Download the package for your platform. There is a package for both UNIX,
+Cygwin and Windows (with MKS Toolkit installed).
+     <UL>
+        <LI>For UNIX and Cygwin users, download: <A href="/tbd.">tbd.</A></LI>
+        <LI>For Windows (with MKS Toolkit installed) users, download: <A href="/tbd.">tbd.</A>.
+        </LI>
+     </UL>
+  </LI>
+  <LI>Extract the VSPMS package in the location where it will be run, The default
+     directory is your home directory, $HOME.</LI>
+  <LI>Update your startup files to initialize VSPMS. Refer to the section below
+     <A href="#env">Set Your Environment</A></LI>
+</OL>
+<H3><A name="env"></A>Set Your Environment<BR>
+</H3>
+<P>Each shell has a different environment configuration to initialize VSPMS. Below
+  are the instructions to configure your environment appropriately.</P>
+<P>Supported Shells UNIX and Cygwin: <A href="#csh">csh</A>, <A href="#tcsh">tcsh</A>,
+  <A href="#bash">bash</A>, <A href="#ksh">ksh</A>, <a href="#zsh">zsh</a><BR>
+  Supported Shells Windows with MKS Toolkit installed: <A href="#windows">ksh</A>
+<BR>
+</P>
+<P>Note: The following examples assume you have installed VSPMS in your home directory,
+  $HOME. If you have placed VSPMS in another directory, you must change the $VSPMSHOME
+  value to the new location.</P>
+<B>For UNIX users:</B>
+<P> <I><A name="csh"></A>For csh, add the following lines to your ~/.cshrc file</I></P>
+<PRE>### VSPMS Setup ###
+setenv PROJECTRC .projectrc
+
+set HOSTNAME=`uname -n`
+if (-r $HOME/myprojects.$HOSTNAME) then
+    setenv MYPROJECTS $HOME/myprojects.$HOSTNAME
+else
+    setenv MYPROJECTS $HOME/myprojects
+endif
+set VSPMSHOME=$HOME/vspms
+set VSPMSLIB=$VSPMSHOME/lib
+if (-r $VSPMSLIB/vspmslib.csh) then
+    source $VSPMSLIB/vspmslib.csh
+    set VSPMSPRT = `$VSPMSLIB/whatport`
+    set path = ($path $VSPMSHOME/bin $VSPMSHOME/bin/$VSPMSPRT)
+endif
+#adjust this to your preference:
+
+if ($?prompt != 0) then
+    # MARK BASE ENVIRONMENT
+    pjresethome
+endif
+### End VSPMS setup.
+</PRE>
+<P>Note: Your $PROJECTRC is .projectrc</P>
+<P>Add the following lines to your !/.logout file</P>
+<P>
+<PRE>
+### VSPMS Setup
+if ($?PROJECT_SAVE) then
+    echo "Saving project environment..."
+    pjsave
+endif
+#clean up after others as well:
+pjcleantmp -f -q
+pjclean
+### End VSPMS setup.
+</PRE>
+<P><I><A name="tcsh"></A>For tcsh, add the following lines to your <A href="#startup">startup
+  file</A>.</I></P>
+<PRE>
+### VSPMS Setup ###
+setenv PROJECTRC .projectrc
+set HOSTNAME=`uname -n`
+if (-r $HOME/myprojects.$HOSTNAME) then
+setenv MYPROJECTS $HOME/myprojects.$HOSTNAME
+else
+    setenv MYPROJECTS $HOME/myprojects
+endif
+set VSPMSHOME=$HOME/vspms
+set VSPMSLIB=$VSPMSHOME/lib
+if (-r $VSPMSLIB/vspmslib.csh) then
+    source $VSPMSLIB/vspmslib.csh
+    set VSPMSPRT = `$VSPMSLIB/whatport`
+    set path = ($path $VSPMSHOME/bin $VSPMSHOME/bin/$VSPMSPRT)
+endif
+#adjust this to your preference:
+if ($?prompt != 0) then
+    # MARK BASE ENVIRONMENT
+    pjresethome
+endif
+### End VSPMS setup.
+Add the following lines to your !/.logout file
+
+### VSPMS Setup
+if ($?PROJECT_SAVE) then
+    echo "Saving project environment..."
+    pjsave
+endif
+#clean up after others as well:
+pjcleantmp -f -q
+pjclean
+### End VSPMS setup.</PRE>
+<P><I><A name="bash"></A>For bash, add the following lines to your <A href="#startup">startup file</A>.</I></P>
+<PRE>
+### VSPMS Setup ###
+export PROJECTRC;PROJECTRC=./projectrc.ksh
+HOSTNAME=`uname -n`
+if [ -f $HOME/myprojects.$HOSTNAME ]; then
+    export MYPROJECTS;MYPROJECTS=$HOME/myprojects.$HOSTNAME
+else
+    export MYPROJECTS;MYPROJECTS=$HOME/myprojects
+fi
+VSPMSHOME=$HOME/vspms
+export VSPMSLIB ; VSPMSLIB=$VSPMSHOME/lib
+export VSPMSPORT ; VSPMSPORT=`$VSPMSLIB/whatport`
+PATH="$PATH:$VSPMSHOME/bin/$VSPMSPORT:$VSPMSHOME/bin"
+export PROJECT_SAVE; PROJECT_SAVE=
+if [ -r $VSPMSLIB/vspms.bash ]; then
+    . $VSPMSLIB/vspms.bash
+else
+    echo WARNING:  VSPMS not found
+fi
+### End VSPMS setup.
+
+Add the following lines to your !/.bash_logout file
+### Start VSPMS setup.
+if [ x$PROJECT_SAVE != x ];then
+    echo "Saving project environment..."
+    pjsave
+fi
+#clean up after others as well:
+pjcleantmp -f -q
+pjclean
+### End VSPMS setup.</PRE>
+<P><I><A name="ksh"></A>For ksh, add the following lines to your ~/.profile file</I></P>
+<PRE>
+### VSPMS Setup ###
+export PROJECTRC;PROJECTRC=projectrc.ksh
+HOSTNAME=`uname -n`
+if [ -f $HOME/myprojects.$HOSTNAME ]; then
+          export MYPROJECTS;MYPROJECTS=$HOME/myprojects.$HOSTNAME
+else
+          export MYPROJECTS;MYPROJECTS=$HOME/myprojects
+fi
+VSPMSHOME=$HOME/vspms
+export VSPMSLIB ; VSPMSLIB=$VSPMSHOME/lib
+export VSPMSPORT ; VSPMSPORT=`$VSPMSLIB/whatport`
+PATH="$PATH:$VSPMSHOME/bin/$VSPMSPORT:$VSPMSHOME/bin"
+if [ -r $VSPMSLIB/pushd.ksh ]; then
+          . $VSPMSLIB/pushd.ksh
+else
+          echo WARNING:  pushd package not found
+fi
+export PROJECT_SAVE; PROJECT_SAVE=
+if [ -r $VSPMSLIB/vspms.ksh ]; then
+  . $VSPMSLIB/vspms.ksh
+else
+    echo WARNING: VSPMS not found
+fi
+### End VSPMS setup.
+</PRE>
+<p><i><a name="zsh"></a>For zsh, add the following lines to your ~/.zprofile file</i></p>
+<pre>
+### VSPMS Setup ###
+export PROJECTRC;PROJECTRC=projectrc.ksh
+HOSTNAME=`uname -n`
+if [ -f $HOME/myprojects.$HOSTNAME ]; then
+          export MYPROJECTS;MYPROJECTS=$HOME/myprojects.$HOSTNAME
+else
+          export MYPROJECTS;MYPROJECTS=$HOME/myprojects
+fi
+VSPMSHOME=$HOME/vspms
+export VSPMSLIB ; VSPMSLIB=$VSPMSHOME/lib
+export VSPMSPORT ; VSPMSPORT=`$VSPMSLIB/whatport`
+PATH="$PATH:$VSPMSHOME/bin/$VSPMSPORT:$VSPMSHOME/bin"
+export PROJECT_SAVE; PROJECT_SAVE=
+if [ -r $VSPMSLIB/vspms.zsh ]; then
+  . $VSPMSLIB/vspms.zsh
+else
+    echo WARNING: VSPMS not found
+fi
+### End VSPMS setup.
+
+Add the following lines to your !/.zlogout file
+### Start VSPMS setup.
+if [ x$PROJECT_SAVE != x ];then
+       echo "Saving project environment..."
+        pjsave
+fi
+#clean up after others as well:
+pjcleantmp -f -q
+pjclean
+### End VSPMS setup.
+</verbatim></PRE>
+<P><A name="windows"></A>
+<B>For WINDOWS users:</B>
+<P>You will need to install MKS Toolkit before you can run VSPMS on Windows. After
+  you have installed MKS Toolkit, you will need to edit your MKS environment before
+  you can run VSPMS. </P>
+<P>Add the following line to your $HOME/.profile.ksh</P>
+<PRE>
+### VSPMS Setup ###
+# VSPMS aliases
+alias repushd=". ~/vspms/pushd.ksh"
+alias revspms=". ~/vspms/vspms.ksh"
+# add vspms to your path
+export PATH="${HOME}/vspms;$PATH"
+# initialize VSPMS
+repushd
+export MYPROJECTS=$HOME/myprojects
+revspms
+### End VSPMS setup.
+</verbatim></PRE>
+<P><A name="windows_cygwin"></A>
+<B>For Cygwin WINDOWS users:</B>
+<P>VSPMS in Cygwin on Windows. You will need to edit your bash environment before you can run VSPMS.</P>
+<P>Add the following line to your $HOME/.bashrc</P>
+<PRE>
+### VSPMS Setup ###
+# add vspms to your path
+export PATH="${HOME}/vspms;$PATH"
+# initialize VSPMS
+source ~/vspms/vspms.cygbash
+### End VSPMS setup.
+</verbatim></PRE>
+<H3><A name="projects"></A>Managing Projects</H3>
+<PRE>Your project index file (defined by $MYPROJECTS) has 2 columns of the following format:
+
+     project_name    project_directory
+
+This file may also include other files. Environment variables in %include statements are expanded.
+
+Example:
+
+     #########       ##########
+     #nickname       directory
+     #########       ##########
+     fooproject     $HOME/foo
+     #
+     %include ~/myprojects.$HOSTNAME
+</verbatim></PRE>
+<P>Beware of nested includes - you may get unexpected results due to an unexpected
+  ordering of the project list, or you may get into a recursive loop if two project
+  index files include each other. Note that the second column is exposed to the
+  shell, so meta-characters meaningful to the shell ("~", "$", etc.) will be expanded
+  normally. </P>
+<P>Each project_directory can have a $PROJECTRC file, to establish the project
+  environment. Here is an example of a simple $PROJECTRC file</P>
+<PRE>
+     # .projectrc file
+     setenv REV v100
+     set path = (/usr/newstuff $path)
+     echo HELLO, YOU ARE IN A PROJECT
+</verbatim></PRE>
+<P>Note that if $REV is defined, it is displayed whenever you issue one of the project navigational commands.
+</P>
+<H3><A name="startup"></A>Updating your startup file</H3>
+<P>Some shells and their versions have different startup files. Also, startup
+  files may be different based on whether or not they are login shells. Refer
+  to the man pages for the shell you are using to determine which file you need
+  to update. </P>
+</BODY>
+</HTML>

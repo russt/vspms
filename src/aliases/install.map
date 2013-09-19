@@ -1,0 +1,7 @@
+TARGET_OS=cmn,ntcmn
+pushd.ksh	packages/${TARGET_OS}/vspms/lib/pushd.ksh	0444
+pushd_mks.ksh	packages/${TARGET_OS}/vspms/lib/pushd_mks.ksh	0444
+vspms.bash	packages/${TARGET_OS}/vspms/lib/vspms.bash	0444
+vspms.ksh	packages/${TARGET_OS}/vspms/lib/vspms.ksh	0444
+vspmslib.csh	packages/${TARGET_OS}/vspms/lib/vspmslib.csh	0444
+

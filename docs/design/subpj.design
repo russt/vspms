@@ -1,0 +1,48 @@
+Okay, so what do I want to be able to do with sub-projects?
+
+The main thing is to be able to have a single project environment
+file in the root project directory, and yet to be able to navigate
+around the subprojects without losing the "main" environment.
+
+However, it is also very nice to be able to take a diversion out
+of the "current" project, work on something else for awhile, and
+come back into the proper project environment.
+
+In order to do this, we have to keep a correspondence between
+the directory stack and the project stack.
+
+I think this is what is missing in my model - I need to associate
+a project environment with a given directory, not create a separate
+project stack.
+
+
+The behavior I want is as follows:
+
+	chpj [newpj]
+		change current project env. to newpj, or if no
+		args, re-establish current pjenv.
+
+	pushpj [newpj] [+n]
+		if newpj is a real pj name, then look up and
+		push pjenv
+
+		if +n or no arg, than switch pjenv's, restoring
+		proper subpj context if it exists
+
+	poppj [+n]
+		delete the indicated pjenv, and establish the
+		top of the dir stack as the new pjenv (and subpj-env,
+		if any)
+
+	subpj [subproject]
+		change current pjenv to $PROJECT/subpj, or
+		if no arg, then re-establish current subpj env
+		(which may be NIL).
+
+	pushspj [subpj] [+n]
+		if subpj, then push $PROJECT/subpj on dir stack,
+		and establish as current pjenv.
+
+	popspj [+n]
+		this is an alias for poppj, since poppj correctly
+		restores the sub-pjenv

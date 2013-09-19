@@ -1,0 +1,12 @@
+TEMPLATE = file.mmf
+
+DESTRULE = dist_except_cmn
+
+PKG      = packages/${TARGET_OS}/vspms/lib
+DEST     = ${BASE}/${PKG}
+MODE     = 0444
+
+#set to -check or -nocheck:
+CHECK    = -nocheck
+
+FILES   = pushd.ksh pushd_mks.ksh vspms.bash vspms.ksh vspmslib.csh
