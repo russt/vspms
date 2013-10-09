@@ -1,0 +1,6 @@
+# directories built by toolsBuild (makedrv -c mmf)
+docs/examples
+docs/user
+src/aliases
+src/c/bin
+src/cmn/bin
